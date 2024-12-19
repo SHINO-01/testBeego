@@ -59,7 +59,9 @@
                         <a id="breed-wiki" href="#" target="_blank" style="display: none;">Learn More</a>
                     </div>
                     <div id="slideshow" class="slideshow-container">
-                        <div id="slideshow-images"></div>
+                        <div id="slideshow-images">
+                            <!-- Images will be dynamically inserted here -->
+                        </div>
                     </div>
                 </div>
             </div>

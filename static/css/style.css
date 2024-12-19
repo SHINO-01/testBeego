@@ -80,7 +80,7 @@ nav {
 
 .cat-image-container {
     position: relative;
-    max-width: 600px;
+    max-width: 700px;
     margin: 0 auto;
     border-radius: 10px;
     overflow: hidden;
@@ -248,22 +248,58 @@ nav {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Slideshow Container */
 .slideshow-container {
     position: relative;
-    margin-top: 20px;
-    
+    margin: 20px auto;
+    width: 700px; /* Set the slideshow width */
+    height: 500px; /* Set the slideshow height */
+    overflow: hidden;
+    border-radius: 15px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    background: #f9f9f9;
 }
 
+/* Images */
 .slideshow-img {
-    width: 700px;
-    height: 400px;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     display: none;
-    border-radius: 20px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out;
 }
 
-.slideshow-img:first-child {
+.slideshow-img.active {
     display: block;
+    opacity: 1;
 }
+
+/* Dot Indicators */
+.slideshow-dots {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+    gap: 5px;
+    border: 2px solid red;
+}
+
+.slideshow-dot {
+    width: 12px;
+    height: 12px;
+    background: #ccc;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.slideshow-dot.active {
+    background-color: #007bff;
+}
+
 
 
 /* Animations */

@@ -171,17 +171,51 @@ document.addEventListener('DOMContentLoaded', function () {
     let slideshowInterval;
     function startSlideshow() {
         const images = document.querySelectorAll('.slideshow-img');
+        const dotContainer = document.createElement('div');
+        dotContainer.className = 'slideshow-dots';
+        const slideshowContainer = document.querySelector('.slideshow-container');
+    
+        // Remove existing dots
+        const existingDots = document.querySelector('.slideshow-dots');
+        if (existingDots) existingDots.remove();
+    
+        // Create dot indicators
+        images.forEach((_, index) => {
+            const dot = document.createElement('span');
+            dot.className = 'slideshow-dot';
+            if (index === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => {
+                setActiveSlide(index);
+            });
+            dotContainer.appendChild(dot);
+        });
+    
+        slideshowContainer.appendChild(dotContainer);
+    
         let currentIndex = 0;
-
+    
+        function setActiveSlide(index) {
+            images.forEach((img, i) => {
+                img.classList.toggle('active', i === index);
+            });
+            const dots = document.querySelectorAll('.slideshow-dot');
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === index);
+            });
+            currentIndex = index;
+        }
+    
+        // Automatically transition slides every 3 seconds
         if (slideshowInterval) clearInterval(slideshowInterval);
-        images.forEach((img, index) => img.style.display = index === 0 ? 'block' : 'none');
-
         slideshowInterval = setInterval(() => {
-            images[currentIndex].style.display = 'none';
-            currentIndex = (currentIndex + 1) % images.length;
-            images[currentIndex].style.display = 'block';
+            const nextIndex = (currentIndex + 1) % images.length;
+            setActiveSlide(nextIndex);
         }, 3000);
+    
+        // Start with the first image
+        setActiveSlide(0);
     }
+    
 
     // Favorites functionality
     async function loadFavorites() {
