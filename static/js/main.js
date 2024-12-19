@@ -194,26 +194,41 @@ document.addEventListener('DOMContentLoaded', function () {
     
         let currentIndex = 0;
     
-        function setActiveSlide(index) {
-            images.forEach((img, i) => {
-                img.classList.toggle('active', i === index);
+        function setActiveSlide(index, direction = 'next') {
+            const currentSlide = images[currentIndex];
+            const nextSlide = images[index];
+            
+            // Remove any ongoing transitions
+            images.forEach(img => {
+                if (img !== currentSlide && img !== nextSlide) {
+                    img.style.transition = 'none';
+                    img.classList.remove('active');
+                }
             });
+            
+            // Enable transitions for current and next slides
+            currentSlide.style.transition = '';
+            nextSlide.style.transition = '';
+            
+            // Update active states
+            currentSlide.classList.remove('active');
+            nextSlide.classList.add('active');
+            
+            // Update dots
             const dots = document.querySelectorAll('.slideshow-dot');
             dots.forEach((dot, i) => {
                 dot.classList.toggle('active', i === index);
             });
+            
             currentIndex = index;
         }
-    
-        // Automatically transition slides every 3 seconds
+
+        // Automatically transition slides every 5 seconds
         if (slideshowInterval) clearInterval(slideshowInterval);
         slideshowInterval = setInterval(() => {
             const nextIndex = (currentIndex + 1) % images.length;
             setActiveSlide(nextIndex);
         }, 3000);
-    
-        // Start with the first image
-        setActiveSlide(0);
     }
     
 
