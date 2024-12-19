@@ -251,12 +251,14 @@ nav {
 .slideshow-container {
     position: relative;
     margin-top: 20px;
+    
 }
 
 .slideshow-img {
-    width: 100%;
-    height: auto;
+    width: 700px;
+    height: 400px;
     display: none;
+    border-radius: 20px;
 }
 
 .slideshow-img:first-child {
