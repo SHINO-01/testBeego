@@ -72,34 +72,31 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     //fav button
     document.querySelector('.favorite-btn').addEventListener('click', async () => {
-    
-        if (!currentImageId) {
-            showToast('No cat image to favorite', 'error');
-            return;
-        }
+        const payload = {
+            image_id: currentImageId, // Replace with the actual image ID
+            sub_id: 'user-shino33'
+        };
     
         try {
             const response = await fetch('/api/favorites', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json', // Ensure JSON content type
                 },
-                body: JSON.stringify({
-                    image_id: currentImageId,
-                    sub_id: 'user-shino33' // Optional: track user-specific favorites
-                })
+                body: JSON.stringify(payload), // Serialize payload to JSON
             });
     
             if (response.ok) {
                 showToast('Added to favorites');
-                loadNewCatToVote();// Optionally refresh favorites view if currently active
-               
+                loadNewCatToVote();
             } else {
-                throw new Error('Failed to add to favorites');
+                const errorData = await response.json();
+                console.error('Error:', errorData);
+                showToast('Failed to add favorite', 'error');
             }
         } catch (error) {
-            showToast('Failed to add to favorites', 'error');
-            console.error('Error:', error);
+            console.error('Error adding favorite:', error);
+            showToast('Error adding favorite', 'error');
         }
     });
     

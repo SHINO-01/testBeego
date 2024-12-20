@@ -2,11 +2,13 @@
 package controllers
 
 import (
-    "encoding/json"
-    "fmt"
-    "time"
-    "github.com/beego/beego/v2/client/httplib"
-    "github.com/beego/beego/v2/server/web"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/beego/beego/v2/client/httplib"
+	"github.com/beego/beego/v2/core/logs"
+	"github.com/beego/beego/v2/server/web"
 )
 
 type CatController struct {
@@ -91,24 +93,42 @@ func (c *CatController) GetBreeds() {
 }
 
 func (c *CatController) Vote() {
-    var vote Vote
+    var vote struct {
+        ImageID string `json:"image_id"`
+        SubID   string `json:"sub_id,omitempty"`
+        Value   int    `json:"value"`
+    }
+
     if err := json.Unmarshal(c.Ctx.Input.RequestBody, &vote); err != nil {
         c.Data["json"] = map[string]string{"error": "Invalid request body"}
         c.ServeJSON()
         return
     }
 
+    // Validate fields
+    if vote.ImageID == "" || (vote.Value != 1 && vote.Value != -1) {
+        c.Data["json"] = map[string]string{"error": "Invalid request parameters"}
+        c.ServeJSON()
+        return
+    }
+
+    // Set default sub_id if not provided
+    if vote.SubID == "" {
+        vote.SubID = "user-shino33"
+    }
+
     apiKey, _ := web.AppConfig.String("cat_api_key")
     baseURL, _ := web.AppConfig.String("api_base_url")
-    
+
+    // Make the API request
     req := httplib.Post(fmt.Sprintf("%s/votes", baseURL))
     req.Header("x-api-key", apiKey)
     req.Header("Content-Type", "application/json")
     req.JSONBody(vote)
-    
-    var result interface{}
+
+    var result map[string]interface{}
     err := req.ToJSON(&result)
-    
+
     if err != nil {
         c.Data["json"] = map[string]string{"error": "Failed to submit vote"}
     } else {
@@ -135,32 +155,55 @@ func (c *CatController) AddFavorite() {
         ImageID string `json:"image_id"`
         SubID   string `json:"sub_id,omitempty"`
     }
-    
+
+    // Parse request body
     if err := json.Unmarshal(c.Ctx.Input.RequestBody, &favorite); err != nil {
+        logs.Error("Invalid request body: %v", err)
         c.Data["json"] = map[string]string{"error": "Invalid request body"}
         c.ServeJSON()
         return
     }
 
-    // Optional: Set a default sub_id if not provided
+    // Validate input
+    if favorite.ImageID == "" {
+        logs.Warn("Missing Image ID in request")
+        c.Data["json"] = map[string]string{"error": "Image ID is required"}
+        c.ServeJSON()
+        return
+    }
+
     if favorite.SubID == "" {
         favorite.SubID = "user-shino33"
     }
 
+    logs.Info("Payload to send: %+v", favorite)
+
     apiKey, _ := web.AppConfig.String("cat_api_key")
     baseURL, _ := web.AppConfig.String("api_base_url")
-    
+
     req := httplib.Post(fmt.Sprintf("%s/favourites", baseURL))
     req.Header("x-api-key", apiKey)
     req.Header("Content-Type", "application/json")
-    req.JSONBody(favorite)
-    
-    var result interface{}
-    err := req.ToJSON(&result)
-    
+
+    reqBody, err := json.Marshal(favorite)
     if err != nil {
+        logs.Error("Failed to serialize request body: %v", err)
+        c.Data["json"] = map[string]string{"error": "Failed to serialize request body"}
+        c.ServeJSON()
+        return
+    }
+
+    // Debugging the exact body being sent
+    logs.Info("Serialized Request Body: %s", string(reqBody))
+
+    req.Body(reqBody)
+
+    var result map[string]interface{}
+    if err := req.ToJSON(&result); err != nil {
+        logs.Error("API error: %v", err)
         c.Data["json"] = map[string]string{"error": "Failed to add favorite"}
     } else {
+        logs.Info("API Response: %+v", result)
         c.Data["json"] = result
     }
     c.ServeJSON()
