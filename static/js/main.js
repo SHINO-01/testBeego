@@ -70,7 +70,39 @@ document.addEventListener('DOMContentLoaded', function () {
             setLoading(false);
         }
     }
-
+    //fav button
+    document.querySelector('.favorite-btn').addEventListener('click', async () => {
+    
+        if (!currentImageId) {
+            showToast('No cat image to favorite', 'error');
+            return;
+        }
+    
+        try {
+            const response = await fetch('/api/favorites', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    image_id: currentImageId,
+                    sub_id: 'user-shino33' // Optional: track user-specific favorites
+                })
+            });
+    
+            if (response.ok) {
+                showToast('Added to favorites');
+                loadNewCatToVote();// Optionally refresh favorites view if currently active
+               
+            } else {
+                throw new Error('Failed to add to favorites');
+            }
+        } catch (error) {
+            showToast('Failed to add to favorites', 'error');
+            console.error('Error:', error);
+        }
+    });
+    
     // Vote buttons
     document.querySelectorAll('.vote-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -237,22 +269,29 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch('/api/favorites');
             const favorites = await response.json();
-            displayFavorites(favorites);
+            
+            const container = document.querySelector('.favorites-grid');
+            if (favorites.length === 0) {
+                container.innerHTML = '<p class="no-favorites">No favorites yet. Start adding some cats!</p>';
+                return;
+            }
+    
+            container.innerHTML = favorites.map(fav => `
+                <div class="favorite-card" data-id="${fav.id}">
+                    <img src="${fav.image.url}" alt="Favorite cat">
+                    <div class="favorite-details">
+                        <span class="favorite-date">${new Date(fav.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <button class="remove-btn" onclick="removeFavorite(${fav.id})">×</button>
+                </div>
+            `).join('');
         } catch (error) {
             showToast('Error loading favorites', 'error');
             console.error('Error:', error);
         }
     }
+    
 
-    function displayFavorites(favorites) {
-        const container = document.querySelector('.favorites-grid');
-        container.innerHTML = favorites.map(fav => `
-            <div class="favorite-card" data-id="${fav.id}">
-                <img src="${fav.url}" alt="Favorite cat">
-                <button class="remove-btn" onclick="removeFavorite(${fav.id})">×</button>
-            </div>
-        `).join('');
-    }
 
     window.removeFavorite = async function (id) {
         try {

@@ -52,7 +52,7 @@ func makeAPIRequest(endpoint string) chan []byte {
         
         req := httplib.Get(fmt.Sprintf("%s/%s", baseURL, endpoint))
         req.Header("x-api-key", apiKey)
-        
+        req.Header("Content-Type", "application/json")
         resp, err := req.Bytes()
         if err != nil {
             resp = []byte(`{"error": "Failed to fetch data"}`)
@@ -133,12 +133,18 @@ func (c *CatController) GetFavorites() {
 func (c *CatController) AddFavorite() {
     var favorite struct {
         ImageID string `json:"image_id"`
+        SubID   string `json:"sub_id,omitempty"`
     }
     
     if err := json.Unmarshal(c.Ctx.Input.RequestBody, &favorite); err != nil {
         c.Data["json"] = map[string]string{"error": "Invalid request body"}
         c.ServeJSON()
         return
+    }
+
+    // Optional: Set a default sub_id if not provided
+    if favorite.SubID == "" {
+        favorite.SubID = "user-shino33"
     }
 
     apiKey, _ := web.AppConfig.String("cat_api_key")
