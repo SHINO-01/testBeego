@@ -124,6 +124,34 @@ func (c *CatController) GetBreeds() {
 		c.ServeJSON()
 	}
 }
+// Get Breeds Images//
+func (c *CatController) GetBreedImages() {
+	logs.Info("GetBreedImages Endpoint Hit")
+
+	breedID := c.GetString("breed_id")
+	limit, err := c.GetInt("limit", 8)
+	if err != nil{
+		logs.Error("Invalid Limit Parameter: %v", err)
+		c.Data["json"] = map[string]string{"error": "Invalid limit parameter"}
+        c.ServeJSON()
+        return
+	}
+
+	apiEndpoint := fmt.Sprintf("images/search?breed_ids=%s&limit=%d", breedID, limit)
+
+    // Fire off the request in a goroutine
+    resultChan := makeAPIRequest(apiEndpoint, "GET", nil)
+
+    select {
+    case result := <-resultChan:
+        // Return the JSON response directly
+        c.Ctx.Output.Header("Content-Type", "application/json")
+        c.Ctx.Output.Body(result)
+    case <-time.After(10 * time.Second):
+        c.Data["json"] = map[string]string{"error": "Request timeout"}
+        c.ServeJSON()
+    }
+}
 
 // Submit a vote for a cat image
 func (c *CatController) Vote() {

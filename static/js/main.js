@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const payload = {
             image_id: currentImageId // Replace with the actual image ID
         };
-    
+
         try {
             const response = await fetch('/api/favorites', {
                 method: 'POST',
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 body: JSON.stringify(payload), // Serialize payload to JSON
             });
-    
+
             if (response.ok) {
                 showToast('Added to favorites');
                 loadNewCatToVote();
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function () {
             showToast('Error adding favorite', 'error');
         }
     });
-    
+
     // Vote buttons
     document.querySelectorAll('.vote-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -106,14 +106,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.error('No image ID available for voting');
                 return;
             }
-    
+
             const payload = {
                 image_id: currentImageId,
                 value: parseInt(btn.dataset.vote) // Ensure this is an integer
             };
-    
+
             console.log('Payload:', payload);
-    
+
             try {
                 const response = await fetch('/api/vote', {
                     method: 'POST',
@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     },
                     body: JSON.stringify(payload) // Serialize the payload
                 });
-    
+
                 if (!response.ok) {
                     const errorData = await response.json();
                     console.error('Error response:', errorData);
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-    
+
 
     // Breed dropdown and details functionality
     async function loadBreedsDropdown() {
@@ -177,45 +177,47 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             wikiLink.style.display = 'none';
         }
-    
+
         const slideshow = document.getElementById('slideshow-images');
         slideshow.innerHTML = 'Loading images...';
-    
+
         try {
-            const queryParams = new URLSearchParams({
-                breed_ids: breed.id,
-                limit: 8,
+            const params = new URLSearchParams({
+                breed_ids: breed.id,  // e.g. "beng"
+                limit: 8
             });
-    
-            const response = await fetch(`https://api.thecatapi.com/v1/images/search?${queryParams}`);
-            if (!response.ok) throw new Error('Failed to fetch images');
-    
+
+            const response = await fetch(`/api/breed-images?${params.toString()}`);
+            if (!response.ok) throw new Error('Failed to fetch images from server');
+
             const images = await response.json();
-            if (images.length === 0) throw new Error('No images found for this breed');
-    
-            slideshow.innerHTML = images.map(img => `<img src="${img.url}" alt="${breed.name}" class="slideshow-img">`).join('');
+            if (!images.length) throw new Error('No images found for this breed');
+
+            slideshow.innerHTML = images
+                .map(img => `<img src="${img.url}" alt="${breed.name}" class="slideshow-img">`)
+                .join('');
             startSlideshow();
-    
+
             console.log(`Loaded ${images.length} images for breed: ${breed.name}`);
         } catch (error) {
             slideshow.innerHTML = `<p>Error loading images: ${error.message}</p>`;
             console.error(error);
         }
-    
+
         document.getElementById('breed-details').style.display = 'block';
     }
-    
+
     let slideshowInterval;
     function startSlideshow() {
         const images = document.querySelectorAll('.slideshow-img');
         const dotContainer = document.createElement('div');
         dotContainer.className = 'slideshow-dots';
         const slideshowContainer = document.querySelector('.slideshow-container');
-    
+
         // Remove existing dots
         const existingDots = document.querySelector('.slideshow-dots');
         if (existingDots) existingDots.remove();
-    
+
         // Create dot indicators
         images.forEach((_, index) => {
             const dot = document.createElement('span');
@@ -226,15 +228,15 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             dotContainer.appendChild(dot);
         });
-    
+
         slideshowContainer.appendChild(dotContainer);
-    
+
         let currentIndex = 0;
-    
+
         function setActiveSlide(index, direction = 'next') {
             const currentSlide = images[currentIndex];
             const nextSlide = images[index];
-            
+
             // Remove any ongoing transitions
             images.forEach(img => {
                 if (img !== currentSlide && img !== nextSlide) {
@@ -242,21 +244,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     img.classList.remove('active');
                 }
             });
-            
+
             // Enable transitions for current and next slides
             currentSlide.style.transition = '';
             nextSlide.style.transition = '';
-            
+
             // Update active states
             currentSlide.classList.remove('active');
             nextSlide.classList.add('active');
-            
+
             // Update dots
             const dots = document.querySelectorAll('.slideshow-dot');
             dots.forEach((dot, i) => {
                 dot.classList.toggle('active', i === index);
             });
-            
+
             currentIndex = index;
         }
 
@@ -267,26 +269,26 @@ document.addEventListener('DOMContentLoaded', function () {
             setActiveSlide(nextIndex);
         }, 3000);
     }
-    
+
 
     // Favorites functionality
     async function loadFavorites() {
         try {
             const response = await fetch('/api/favorites');
             const favorites = await response.json();
-            
+
             const container = document.querySelector('.favorites-grid');
             if (favorites.length === 0) {
                 container.innerHTML = '<p class="no-favorites">No favorites yet. Start adding some cats!</p>';
                 return;
             }
-    
+
             container.innerHTML = favorites.map(fav => `
                 <div class="favorite-card" data-id="${fav.id}">
                     <img src="${fav.image.url}" alt="Favorite cat">
                     <div class="favorite-details">
                         <span class="favorite-date">${new Date(fav.created_at).toLocaleDateString()}</span>
-                        <button class="remove-btn" onclick="removeFavorite(${fav.id})">❌</button>
+                        <button class="remove-btn" onclick="removeFavorite(${fav.id})">❌ Remove</button>
                     </div>             
                 </div>
             `).join('');
@@ -295,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Error:', error);
         }
     }
-    
+
 
 
     window.removeFavorite = async function (id) {

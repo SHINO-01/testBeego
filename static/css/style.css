@@ -223,16 +223,19 @@ nav {
 }
 
 .favorite-date {
-    color: red;
+    color: green;
     font-size: 1em;
     font-weight: 600;
 }
 
 .remove-btn {
     text-align: center;
-    color: #888;
+    color: red;
     padding: 5px;
     grid-column: 1 / -1;
+    margin-left: 6em;
+    border-radius: 15px;
+    border: 1px red solid;
 }
 
 /*====================================BREED=============*/

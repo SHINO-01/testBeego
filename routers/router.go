@@ -9,8 +9,12 @@ import (
 func init() {
     web.Router("/", &controllers.CatController{})
     web.Router("/api/cats/random", &controllers.CatController{}, "get:GetRandomCat")
+    
     web.Router("/api/breeds", &controllers.CatController{}, "get:GetBreeds")
+    web.Router("/api/breed-images", &controllers.CatController{}, "get:GetBreedImages")
+
     web.Router("/api/vote", &controllers.CatController{}, "post:Vote")
+    
     web.Router("/api/favorites", &controllers.CatController{}, "get:GetFavorites")
     web.Router("/api/favorites", &controllers.CatController{}, "post:AddFavorite")
     web.Router("/api/favorites/:id", &controllers.CatController{}, "delete:RemoveFavorite")
