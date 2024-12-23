@@ -219,18 +219,19 @@ nav {
 
 .favorite-details {
     padding: 10px;
-    background: rgba(0,0,0,0.05);
+    background: rgba(0,0,0,0.1);
 }
 
 .favorite-date {
-    color: #666;
-    font-size: 0.8em;
+    color: red;
+    font-size: 1em;
+    font-weight: 600;
 }
 
-.no-favorites {
+.remove-btn {
     text-align: center;
     color: #888;
-    padding: 20px;
+    padding: 5px;
     grid-column: 1 / -1;
 }
 
@@ -365,7 +366,7 @@ nav {
     padding: 15px 25px;
     background: #333;
     color: white;
-    border-radius: 5px;
+    border-radius: 25px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     opacity: 0;
     transition: opacity 0.3s ease;

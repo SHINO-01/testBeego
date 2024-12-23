@@ -73,8 +73,7 @@ document.addEventListener('DOMContentLoaded', function () {
     //fav button
     document.querySelector('.favorite-btn').addEventListener('click', async () => {
         const payload = {
-            image_id: currentImageId, // Replace with the actual image ID
-            sub_id: 'user-shino33'
+            image_id: currentImageId // Replace with the actual image ID
         };
     
         try {
@@ -103,33 +102,42 @@ document.addEventListener('DOMContentLoaded', function () {
     // Vote buttons
     document.querySelectorAll('.vote-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
-            if (!currentImageId) return;
-
+            if (!currentImageId) {
+                console.error('No image ID available for voting');
+                return;
+            }
+    
+            const payload = {
+                image_id: currentImageId,
+                value: parseInt(btn.dataset.vote) // Ensure this is an integer
+            };
+    
+            console.log('Payload:', payload);
+    
             try {
-                const value = parseInt(btn.dataset.vote);
                 const response = await fetch('/api/vote', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        image_id: currentImageId,
-                        value: value
-                    })
+                    body: JSON.stringify(payload) // Serialize the payload
                 });
-
-                if (response.ok) {
-                    showToast('Vote recorded successfully');
-                    loadNewCatToVote();
+    
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Error response:', errorData);
                 } else {
-                    throw new Error('Vote failed');
+                    showToast('Added to favorites');
+                    loadNewCatToVote();
+                    const responseData = await response.json();
+                    console.log('Success response:', responseData);
                 }
             } catch (error) {
-                showToast('Failed to submit vote', 'error');
-                console.error('Error:', error);
+                console.error('Fetch error:', error);
             }
         });
     });
+    
 
     // Breed dropdown and details functionality
     async function loadBreedsDropdown() {
@@ -278,8 +286,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     <img src="${fav.image.url}" alt="Favorite cat">
                     <div class="favorite-details">
                         <span class="favorite-date">${new Date(fav.created_at).toLocaleDateString()}</span>
-                    </div>
-                    <button class="remove-btn" onclick="removeFavorite(${fav.id})">×</button>
+                        <button class="remove-btn" onclick="removeFavorite(${fav.id})">❌</button>
+                    </div>             
                 </div>
             `).join('');
         } catch (error) {
