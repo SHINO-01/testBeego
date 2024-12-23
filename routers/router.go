@@ -18,4 +18,6 @@ func init() {
     web.Router("/api/favorites", &controllers.CatController{}, "get:GetFavorites")
     web.Router("/api/favorites", &controllers.CatController{}, "post:AddFavorite")
     web.Router("/api/favorites/:id", &controllers.CatController{}, "delete:RemoveFavorite")
+
+    web.Router("/api/vote_history", &controllers.CatController{}, "get:GetVoteHistory")
 }

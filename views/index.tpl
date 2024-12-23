@@ -20,6 +20,9 @@
                 <button class="tab-btn" data-tab="favs">
                     <span class="icon">❤️</span> Favs
                 </button>
+                <button class="tab-btn" data-tab="vote_history">
+                    <span class="icon">📜</span> History
+                </button>
             </div>
         </nav>
 
@@ -65,10 +68,11 @@
                     </div>
                 </div>
             </div>
-                       
-
             <div id="favs" class="tab-pane">
                 <div class="favorites-grid"></div>
+            </div>
+            <div id="vote_history" class="tab-pane">
+                <div class="history_grid"></div>
             </div>
         </div>
     </div>

@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (targetTab === 'voting') loadNewCatToVote();
             if (targetTab === 'breeds') loadBreedsDropdown();
             if (targetTab === 'favs') loadFavorites();
+            if (targetTab === 'vote_history') loadVoteHistory();
         });
     });
 
@@ -70,6 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
             setLoading(false);
         }
     }
+
     //fav button
     document.querySelector('.favorite-btn').addEventListener('click', async () => {
         const payload = {
@@ -86,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             if (response.ok) {
-                showToast('Added to favorites');
+                showToast('Added to favorites!');
                 loadNewCatToVote();
             } else {
                 const errorData = await response.json();
@@ -126,8 +128,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!response.ok) {
                     const errorData = await response.json();
                     console.error('Error response:', errorData);
+                    showToast('Failed to vote', 'error');
                 } else {
-                    showToast('Added to favorites');
+                    showToast('Vote Recorded Successfully!');
                     loadNewCatToVote();
                     const responseData = await response.json();
                     console.log('Success response:', responseData);
@@ -137,7 +140,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-
 
     // Breed dropdown and details functionality
     async function loadBreedsDropdown() {
@@ -270,7 +272,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 3000);
     }
 
-
     // Favorites functionality
     async function loadFavorites() {
         try {
@@ -287,8 +288,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="favorite-card" data-id="${fav.id}">
                     <img src="${fav.image.url}" alt="Favorite cat">
                     <div class="favorite-details">
-                        <span class="favorite-date">${new Date(fav.created_at).toLocaleDateString()}</span>
-                        <button class="remove-btn" onclick="removeFavorite(${fav.id})">❌ Remove</button>
+                        <span class="favorite-date">${new Date(fav.created_at).toLocaleString('en-US', {
+                            dateStyle: 'short',
+                            timeStyle: 'short'
+                          })}</span>
+                        <button class="remove-btn" onclick="removeFavorite(${fav.id})">&#10005 Remove</button>
                     </div>             
                 </div>
             `).join('');
@@ -297,8 +301,6 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Error:', error);
         }
     }
-
-
 
     window.removeFavorite = async function (id) {
         try {
@@ -318,6 +320,65 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    async function loadVoteHistory() {
+        try {
+            setLoading(true); // Show loading overlay if desired
+    
+            const response = await fetch('/api/vote_history');
+            if (!response.ok) {
+                throw new Error('Failed to fetch vote history');
+            }
+    
+            // The response should be an array of votes
+            const votes = await response.json();
+    
+            const container = document.querySelector('.history_grid');
+            if (!votes || votes.length === 0) {
+                container.innerHTML = '<p class="no-history">No voting history available.</p>';
+                return;
+            }
+
+            // Build grid cards
+            container.innerHTML = votes.map(vote => {
+                // 1 = upvote => green border, -1 = downvote => red border
+                const borderColor = vote.value === 1 ? 'green' : 'red';
+    
+                // The Cat API's votes often include an `image` field with `url`
+                // If not present, use a placeholder or handle gracefully
+                const imageUrl = vote.image && vote.image.url
+                    ? vote.image.url
+                    : '/static/img/placeholder.png';
+    
+                // Date formatting
+                const dateTime = new Date(vote.created_at).toLocaleString('en-US', {
+                    dateStyle: 'short',
+                    timeStyle: 'short'
+                  });
+    
+                return `
+                    <div class="vote-history-card" style="border: 6px solid ${borderColor};">
+                        <img src="${imageUrl}" alt="Voted cat">
+                        <div class="vote-history-details">
+                            <!-- First row: Date and Vote ID -->
+                            <div class="detail-item">
+                                <span class="vote-history-date">${dateTime}</span>
+                            </div>
+                            <div class="detail-item">
+                                <p>Vote ID: ${vote.id}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+    
+        } catch (error) {
+            showToast('Error loading vote history', 'error');
+            console.error('Error:', error);
+        } finally {
+            setLoading(false); // Hide loading overlay
+        }
+    }
+      
     // Initialize the app
     loadNewCatToVote();
 });

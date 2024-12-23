@@ -211,7 +211,12 @@ func (c *CatController) Vote() {
 
 // Fetch favorite cat images
 func (c *CatController) GetFavorites() {
-	resultChan := makeAPIRequest("favourites", "GET", nil)
+	subID := getConfig("sub_id", "default-user-id")
+    
+    // e.g. favourites?limit=28&order=DESC&sub_id=user-123
+    apiEndpoint := fmt.Sprintf("favourites?limit=28&order=Desc&sub_id=%s", subID)
+
+    resultChan := makeAPIRequest(apiEndpoint, "GET", nil)
 
 	select {
 	case result := <-resultChan:
@@ -281,3 +286,27 @@ func (c *CatController) RemoveFavorite() {
 		c.ServeJSON()
 	}
 }
+
+func (c *CatController) GetVoteHistory() {
+    logs.Info("GetVoteHistory endpoint hit")
+
+    // Use sub_id from config OR your own logic
+    subID := getConfig("sub_id", "default-user-id")
+
+    // Build the endpoint for The Cat API:
+    // e.g. votes?sub_id=user-123
+    apiEndpoint := fmt.Sprintf("votes?sub_id=%s&limit=28&order=Desc", subID)
+
+    // Make the goroutine-based request
+    resultChan := makeAPIRequest(apiEndpoint, "GET", nil)
+
+    select {
+    case result := <-resultChan:
+        c.Ctx.Output.Header("Content-Type", "application/json")
+        c.Ctx.Output.Body(result)
+    case <-time.After(10 * time.Second):
+        c.Data["json"] = map[string]string{"error": "Request timeout"}
+        c.ServeJSON()
+    }
+}
+
