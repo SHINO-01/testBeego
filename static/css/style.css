@@ -128,18 +128,30 @@ nav {
 }
 
 .vote-btn.love {
-    background: #4CAF50;
+    background: white;
     color: white;
+    border: 4px solid rgb(2, 175, 2);
+}
+.love:hover{
+    background: rgb(2, 175, 2);
 }
 
 .vote-btn.nope {
-    background: #f44336;
+    background: white;
     color: white;
+    border: 4px solid rgb(255, 0, 0);
+}
+.nope:hover{
+    background: rgb(255, 0, 0);
 }
 
 .favorite-btn {
-    background: #ff69b4;
+    background: white;
     color: white;
+    border: 4px solid rgb(226, 54, 112);
+}
+.favorite-btn:hover{
+    background: rgb(226, 54, 112);
 }
 
 .vote-btn:hover, .favorite-btn:hover {
