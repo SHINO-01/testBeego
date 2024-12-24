@@ -6,7 +6,30 @@ document.addEventListener('DOMContentLoaded', function () {
     const tabs = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-pane');
     const loadingOverlay = document.querySelector('.loading-overlay');
+    const toggleViewBtn = document.getElementById('toggleViewBtn');
+    const toggleViewIcon = document.getElementById('toggleViewIcon');
+    const favcontainer = document.querySelector('.favorites-grid'); 
 
+    toggleViewBtn.addEventListener('click', () => {
+        if (favcontainer.classList.contains('grid-view')) {
+          // Switch to stack/list view
+          favcontainer.classList.remove('grid-view');
+          favcontainer.classList.add('stack-view');
+    
+          // Update icon to 'grid' icon or 'list' icon accordingly
+          toggleViewIcon.src = 'static/img/icons8-stack-48.png';
+          toggleViewIcon.alt = 'Switch to grid view';
+        } else {
+          // Switch to grid view
+          favcontainer.classList.remove('stack-view');
+          favcontainer.classList.add('grid-view');
+    
+          // Update icon
+          toggleViewIcon.src = 'static/img/icons8-grid-view-48.png';
+          toggleViewIcon.alt = 'Switch to stack view';
+        }
+    });
+    
     // Toast notification function
     function showToast(message, type = 'success') {
         const toast = document.createElement('div');

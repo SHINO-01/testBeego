@@ -69,7 +69,13 @@
                 </div>
             </div>
             <div id="favs" class="tab-pane">
-                <div class="favorites-grid"></div>
+                <!-- Toggle button -->
+                <div class="view-toggle-container">
+                    <button id="toggleViewBtn">
+                        <img id="toggleViewIcon" src="static/img/icons8-grid-view-48.png" alt="Toggle Icon">
+                    </button>
+                </div>
+                <div class="favorites-grid grid-view"></div>
             </div>
             <div id="vote_history" class="tab-pane">
                 <div class="history_grid"></div>

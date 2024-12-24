@@ -204,13 +204,33 @@ nav {
 }
 
 /* Favorites Section */
+#toggleViewBtn{
+    padding: 2px;
+    border: 2px solid black;
+    border-radius: 15px;
+    transition: transform 0.3s ease;
+}
+
+#toggleViewBtn:hover{
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transform: scale(1.02);
+}
+
 .favorites-grid {
+    /* Some common styles, if needed */
+    width: 100%;
+    margin-top: 20px;
+}
+
+/* Grid view (default) */
+.favorites-grid.grid-view {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 20px;
 }
 
-.favorite-card {
+/* Each favorite card in grid view */
+.favorites-grid.grid-view .favorite-card {
     position: relative;
     background: white;
     border-radius: 10px;
@@ -219,19 +239,60 @@ nav {
     transition: transform 0.3s ease;
 }
 
-.favorite-card:hover {
+.favorites-grid.grid-view .favorite-card:hover {
     transform: scale(1.05);
 }
 
-.favorite-card img {
+.favorites-grid.grid-view .favorite-card img {
     width: 100%;
     height: 250px;
     object-fit: cover;
 }
 
-.favorite-details {
+.favorites-grid.grid-view .favorite-details {
     padding: 10px;
     background: rgba(0,0,0,0.1);
+}
+
+/* Stack view */
+.favorites-grid.stack-view {
+    display: block;
+    width: 100%; /* or flex with flex-direction: column */
+}
+
+/* Each favorite card in stack view */
+.favorites-grid.stack-view .favorite-card {
+    display: block; /* or block, adjust to your preference */
+    margin-bottom: 20px;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 10px;
+    align-items: center;
+}
+
+.favorites-grid.stack-view .favorite-card img {
+    width: 100%; /* Limit the image size in a row */
+    height: 500px;
+    margin-right: 20px;
+    object-fit: fill;
+    border-radius: 8px;
+}
+
+.favorites-grid.stack-view .favorite-details {
+    background: none;
+    padding: 5px;
+    width: 100%;
+}
+
+.favorites-grid.stack-view .remove-btn{
+    margin-left: 51em;
+}
+
+.favorites-grid.stack-view .favorite-date{
+    font-size: 1.2em;
+    font-weight: 600;
 }
 
 .favorite-date {
