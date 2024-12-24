@@ -1,23 +1,22 @@
-// routers/router.go
 package routers
 
 import (
-    "testBeego/controllers"
     "github.com/beego/beego/v2/server/web"
+    "testBeego/controllers"
 )
 
 func init() {
-    web.Router("/", &controllers.CatController{})
+    // Cat routes
+    web.Router("/", &controllers.CatController{}, "get:Get")
     web.Router("/api/cats/random", &controllers.CatController{}, "get:GetRandomCat")
-    
     web.Router("/api/breeds", &controllers.CatController{}, "get:GetBreeds")
     web.Router("/api/breed-images", &controllers.CatController{}, "get:GetBreedImages")
 
-    web.Router("/api/vote", &controllers.CatController{}, "post:Vote")
-    
-    web.Router("/api/favorites", &controllers.CatController{}, "get:GetFavorites")
-    web.Router("/api/favorites", &controllers.CatController{}, "post:AddFavorite")
-    web.Router("/api/favorites/:id", &controllers.CatController{}, "delete:RemoveFavorite")
+    // Voting routes
+    web.Router("/api/vote", &controllers.VoteController{}, "post:Vote")
+    web.Router("/api/vote_history", &controllers.VoteController{}, "get:GetVoteHistory")
 
-    web.Router("/api/vote_history", &controllers.CatController{}, "get:GetVoteHistory")
+    // Favorites routes
+    web.Router("/api/favorites", &controllers.FavoritesController{}, "get:GetFavorites;post:AddFavorite")
+    web.Router("/api/favorites/:id", &controllers.FavoritesController{}, "delete:RemoveFavorite")
 }
