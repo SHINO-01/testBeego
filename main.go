@@ -8,7 +8,5 @@ import (
 )
 
 func main() {
-    web.BConfig.Log.AccessLogs = true
-    web.BConfig.RunMode = "dev"
     web.Run() 
 }
