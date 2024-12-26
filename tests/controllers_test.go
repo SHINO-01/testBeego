@@ -6,6 +6,7 @@ import (
     "net/http/httptest"
     "strings"
     "testing"
+    "time"
 
     "github.com/beego/beego/v2/server/web/context"
     "github.com/stretchr/testify/assert"
@@ -208,7 +209,15 @@ func (suite *ControllerTestSuite) TestFavoritesController_RemoveFavorite() {
 
 func (suite *ControllerTestSuite) TestCatController_GetRandomCat_Timeout() {
     recorder, req := setupControllerTest("GET", "/random-cat", "")
-    
+
+    // Simulate timeout in MockAPIClient
+    ch := make(chan []byte)
+    go func() {
+        time.Sleep(11 * time.Second) // Simulates a delay greater than 10 seconds
+        ch <- []byte(`{"error": "Request timeout"}`)
+    }()
+    suite.mockClient.SetResponse("images/search?limit=1", "GET", <-ch)
+
     controller := &controllers.CatController{
         APIClient: suite.mockClient,
     }
@@ -216,9 +225,9 @@ func (suite *ControllerTestSuite) TestCatController_GetRandomCat_Timeout() {
     ctx.Reset(recorder, req)
     controller.Init(ctx, "", "", nil)
     controller.Ctx = ctx
-    
+
     controller.GetRandomCat()
-    
+
     var response map[string]string
     err := json.Unmarshal(recorder.Body.Bytes(), &response)
     assert.NoError(suite.Suite.T(), err)
@@ -269,3 +278,241 @@ func (suite *ControllerTestSuite) TestVoteController_GetVoteHistory() {
     assert.Equal(suite.Suite.T(), http.StatusOK, recorder.Code)
     assert.Equal(suite.Suite.T(), string(mockResponse), recorder.Body.String())
 }
+
+func (suite *ControllerTestSuite) TestCatController_GetBreeds() {
+    recorder, req := setupControllerTest("GET", "/breeds", "")
+
+    mockResponse := []byte(`[{"id":"breed-1","name":"Breed Name"}]`)
+    suite.mockClient.SetResponse("breeds", "GET", mockResponse)
+
+    controller := &controllers.CatController{
+        APIClient: suite.mockClient,
+    }
+    ctx := context.NewContext()
+    ctx.Reset(recorder, req)
+    controller.Init(ctx, "", "", nil)
+    controller.Ctx = ctx
+
+    controller.GetBreeds()
+
+    assert.Equal(suite.Suite.T(), http.StatusOK, recorder.Code)
+    assert.Equal(suite.Suite.T(), string(mockResponse), recorder.Body.String())
+}
+
+func (suite *ControllerTestSuite) TestVoteController_GetVoteHistory_NoVotes() {
+    recorder, req := setupControllerTest("GET", "/vote-history", "")
+
+    mockResponse := []byte(`[]`) // No votes
+    suite.mockClient.SetResponse("votes?sub_id=default-user-id&limit=28&order=Desc", "GET", mockResponse)
+
+    controller := &controllers.VoteController{
+        APIClient: suite.mockClient,
+    }
+    ctx := context.NewContext()
+    ctx.Reset(recorder, req)
+    controller.Init(ctx, "", "", nil)
+    controller.Ctx = ctx
+
+    controller.GetVoteHistory()
+
+    assert.Equal(suite.Suite.T(), http.StatusOK, recorder.Code)
+    assert.Equal(suite.Suite.T(), string(mockResponse), recorder.Body.String())
+}
+
+
+func (suite *ControllerTestSuite) TestFavoritesController_AddFavorite_InvalidPayload() {
+    recorder, req := setupControllerTest("POST", "/favorites", `{}`) // Empty payload
+
+    controller := &controllers.FavoritesController{
+        APIClient: suite.mockClient,
+    }
+    ctx := context.NewContext()
+    ctx.Reset(recorder, req)
+    controller.Init(ctx, "", "", nil)
+    controller.Ctx = ctx
+
+    controller.AddFavorite()
+
+    var response map[string]string
+    err := json.Unmarshal(recorder.Body.Bytes(), &response)
+    assert.NoError(suite.Suite.T(), err)
+    assert.Equal(suite.Suite.T(), "Image ID is required", response["error"])
+}
+
+
+func (suite *ControllerTestSuite) TestCatAPIClient_ErrorHandling() {
+    client := &controllers.CatAPIClient{}
+
+    // Simulate a failed request
+    resultChan := client.MakeAPIRequest("invalid-endpoint", "INVALID", nil)
+
+    result := <-resultChan
+    var response map[string]string
+    json.Unmarshal(result, &response)
+
+    assert.Equal(suite.Suite.T(), "Invalid HTTP method", response["error"])
+}
+
+func BenchmarkGetRandomCat(b *testing.B) {
+    mockClient := mocks.NewMockAPIClient()
+    mockResponse := []byte(`[{"id":"test-id","url":"http://example.com/cat.jpg"}]`)
+    mockClient.SetResponse("images/search?limit=1", "GET", mockResponse)
+
+    controller := &controllers.CatController{
+        APIClient: mockClient,
+    }
+
+    for i := 0; i < b.N; i++ {
+        recorder, req := setupControllerTest("GET", "/random-cat", "")
+        ctx := context.NewContext()
+        ctx.Reset(recorder, req)
+        controller.Init(ctx, "", "", nil)
+        controller.Ctx = ctx
+
+        controller.GetRandomCat()
+    }
+}
+
+func (suite *ControllerTestSuite) TestCatController_GetBreedImages_ValidBreed() {
+    recorder, req := setupControllerTest("GET", "/breed-images?breed_id=abc123&limit=5", "")
+
+    mockResponse := []byte(`[{"id":"image-1","url":"http://example.com/image1.jpg"}]`)
+    suite.mockClient.SetResponse("images/search?breed_ids=abc123&limit=5", "GET", mockResponse)
+
+    controller := &controllers.CatController{
+        APIClient: suite.mockClient,
+    }
+    ctx := context.NewContext()
+    ctx.Reset(recorder, req)
+    controller.Init(ctx, "", "", nil)
+    controller.Ctx = ctx
+
+    controller.GetBreedImages()
+
+    assert.Equal(suite.Suite.T(), http.StatusOK, recorder.Code)
+    assert.Equal(suite.Suite.T(), string(mockResponse), recorder.Body.String())
+}
+
+func (suite *ControllerTestSuite) TestCatController_GetBreedImages_InvalidLimit() {
+    recorder, req := setupControllerTest("GET", "/breed-images?breed_id=abc123&limit=invalid", "")
+
+    controller := &controllers.CatController{
+        APIClient: suite.mockClient,
+    }
+    ctx := context.NewContext()
+    ctx.Reset(recorder, req)
+    controller.Init(ctx, "", "", nil)
+    controller.Ctx = ctx
+
+    controller.GetBreedImages()
+
+    var response map[string]string
+    err := json.Unmarshal(recorder.Body.Bytes(), &response)
+    assert.NoError(suite.Suite.T(), err)
+    assert.Equal(suite.Suite.T(), "Invalid limit parameter", response["error"])
+}
+
+func (suite *ControllerTestSuite) TestFavoritesController_GetFavorites_Empty() {
+    recorder, req := setupControllerTest("GET", "/favorites", "")
+
+    mockResponse := []byte(`[]`) // No favorites
+    suite.mockClient.SetResponse("favourites?limit=28&order=Desc&sub_id=default-user-id", "GET", mockResponse)
+
+    controller := &controllers.FavoritesController{
+        APIClient: suite.mockClient,
+    }
+    ctx := context.NewContext()
+    ctx.Reset(recorder, req)
+    controller.Init(ctx, "", "", nil)
+    controller.Ctx = ctx
+
+    controller.GetFavorites()
+
+    assert.Equal(suite.Suite.T(), http.StatusOK, recorder.Code)
+    assert.Equal(suite.Suite.T(), string(mockResponse), recorder.Body.String())
+}
+
+func (suite *ControllerTestSuite) TestFavoritesController_GetFavorites_APIError() {
+    recorder, req := setupControllerTest("GET", "/favorites", "")
+
+    mockResponse := []byte(`{"error":"API failure"}`)
+    suite.mockClient.SetResponse("favourites?limit=28&order=Desc&sub_id=default-user-id", "GET", mockResponse)
+
+    controller := &controllers.FavoritesController{
+        APIClient: suite.mockClient,
+    }
+    ctx := context.NewContext()
+    ctx.Reset(recorder, req)
+    controller.Init(ctx, "", "", nil)
+    controller.Ctx = ctx
+
+    controller.GetFavorites()
+
+    var response map[string]string
+    err := json.Unmarshal(recorder.Body.Bytes(), &response)
+    assert.NoError(suite.Suite.T(), err)
+    assert.Equal(suite.Suite.T(), "API failure", response["error"])
+}
+
+func (suite *ControllerTestSuite) TestVoteController_Vote_EmptyBody() {
+    recorder, req := setupControllerTest("POST", "/vote", "")
+
+    controller := &controllers.VoteController{
+        APIClient: suite.mockClient,
+    }
+    ctx := context.NewContext()
+    ctx.Reset(recorder, req)
+    controller.Init(ctx, "", "", nil)
+    controller.Ctx = ctx
+
+    controller.Vote()
+
+    var response map[string]string
+    err := json.Unmarshal(recorder.Body.Bytes(), &response)
+    assert.NoError(suite.Suite.T(), err)
+    assert.Equal(suite.Suite.T(), "Empty request body", response["error"])
+}
+
+func (suite *ControllerTestSuite) TestVoteController_Vote_MissingImageID() {
+    vote := models.Vote{
+        Value: 1,
+        SubID: "test-user",
+    }
+    voteJSON, _ := json.Marshal(vote)
+    recorder, req := setupControllerTest("POST", "/vote", string(voteJSON))
+
+    controller := &controllers.VoteController{
+        APIClient: suite.mockClient,
+    }
+    ctx := context.NewContext()
+    ctx.Reset(recorder, req)
+    controller.Init(ctx, "", "", nil)
+    controller.Ctx = ctx
+
+    controller.Vote()
+
+    var response map[string]string
+    err := json.Unmarshal(recorder.Body.Bytes(), &response)
+    assert.NoError(suite.Suite.T(), err)
+    assert.Equal(suite.Suite.T(), "Invalid request parameters", response["error"])
+}
+
+func (suite *ControllerTestSuite) TestCatAPIClient_MissingAPIKey() {
+    client := &controllers.CatAPIClient{}
+    resultChan := client.MakeAPIRequest("images/search", "GET", nil)
+
+    result := <-resultChan
+    var response map[string]string
+    json.Unmarshal(result, &response)
+
+    assert.Equal(suite.Suite.T(), "Failed to fetch data", response["error"])
+}
+
+
+
+
+
+
+
+
+
