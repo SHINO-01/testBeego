@@ -1,3 +1,5 @@
+//types.go
+
 package models
 
 // CatImage is a struct representing a cat image response from The Cat API

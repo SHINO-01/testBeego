@@ -1,3 +1,5 @@
+//favorites_controller.go
+
 package controllers
 
 import (

@@ -287,7 +287,7 @@ nav {
 }
 
 .favorites-grid.stack-view .remove-btn{
-    margin-left: 51em;
+    margin-left: 50em;
 }
 
 .favorites-grid.stack-view .favorite-date{
@@ -308,7 +308,7 @@ nav {
     font-weight: 600;
     font-size: 17px;
     grid-column: 1 / -1;
-    margin-left: 1em;
+    margin-left: 0.5em;
     border-radius: 15px;
     border: 1px red solid;
 }

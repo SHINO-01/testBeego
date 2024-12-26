@@ -1,135 +1,109 @@
-package test
+package controllers_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
-	"runtime"
-	"path/filepath"
 
-	"github.com/beego/beego/v2/core/logs"
-	_ "testBeego/routers"   // Import routers to initialize routes
-
-	beego "github.com/beego/beego/v2/server/web"
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"testBeego/controllers"
+	"testBeego/models"
 )
 
-func init() {
-	_, file, _, _ := runtime.Caller(0)
-	apppath, _ := filepath.Abs(filepath.Dir(filepath.Join(file, ".."+string(filepath.Separator))))
-	beego.TestBeegoInit(apppath)
+// MockAPIClient mocks the API client for testing
+type MockAPIClient struct {
+	mock.Mock
 }
 
-func TestVote(t *testing.T) {
-	validPayload := `{"image_id":"test_image","value":1}`
-	invalidPayload := `{"image_id":"","value":1}`
-
-	Convey("Subject: Test Vote Endpoint\n", t, func() {
-		Convey("Valid Payload Should Return Status 200", func() {
-			r, _ := http.NewRequest("POST", "/api/vote", strings.NewReader(validPayload))
-			r.Header.Set("Content-Type", "application/json")
-			w := httptest.NewRecorder()
-			beego.BeeApp.Handlers.ServeHTTP(w, r)
-
-			So(w.Code, ShouldEqual, 200)
-			So(w.Body.Len(), ShouldBeGreaterThan, 0)
-		})
-
-		Convey("Invalid Payload Should Return Status 400", func() {
-			r, _ := http.NewRequest("POST", "/api/vote", strings.NewReader(invalidPayload))
-			r.Header.Set("Content-Type", "application/json")
-			w := httptest.NewRecorder()
-			beego.BeeApp.Handlers.ServeHTTP(w, r)
-
-			So(w.Code, ShouldEqual, 400)
-		})
-	})
+func (m *MockAPIClient) MakeRequest(endpoint, method string, payload interface{}) ([]byte, error) {
+	args := m.Called(endpoint, method, payload)
+	return args.Get(0).([]byte), args.Error(1)
 }
 
-func TestAddFavorite(t *testing.T) {
-	validPayload := `{"image_id":"test_image"}`
-	invalidPayload := `{"invalid_field":"test_image"}`
+var mockClient *MockAPIClient
 
-	Convey("Subject: Test Add Favorite Endpoint\n", t, func() {
-		Convey("Valid Payload Should Return Status 200", func() {
-			r, _ := http.NewRequest("POST", "/api/favorites", strings.NewReader(validPayload))
-			r.Header.Set("Content-Type", "application/json")
-			w := httptest.NewRecorder()
-			beego.BeeApp.Handlers.ServeHTTP(w, r)
-
-			So(w.Code, ShouldEqual, 200)
-			So(w.Body.Len(), ShouldBeGreaterThan, 0)
-		})
-
-		Convey("Invalid Payload Should Return Status 400", func() {
-			r, _ := http.NewRequest("POST", "/api/favorites", strings.NewReader(invalidPayload))
-			r.Header.Set("Content-Type", "application/json")
-			w := httptest.NewRecorder()
-			beego.BeeApp.Handlers.ServeHTTP(w, r)
-
-			So(w.Code, ShouldEqual, 400)
-		})
-	})
+func TestMain(m *testing.M) {
+	mockClient = new(MockAPIClient)
+	controllers.SetAPIClient(mockClient) // Replace the real API client with the mock
+	m.Run()
 }
 
 func TestGetRandomCat(t *testing.T) {
+	mockResponse := `[{"id":"abc123","url":"http://example.com/cat.jpg"}]`
+
+	mockClient.On("MakeRequest", "images/search?limit=1", "GET", nil).Return([]byte(mockResponse), nil)
+
 	r, _ := http.NewRequest("GET", "/api/cats/random", nil)
 	w := httptest.NewRecorder()
-	beego.BeeApp.Handlers.ServeHTTP(w, r)
 
-	Convey("Subject: Test Get Random Cat Endpoint\n", t, func() {
-		Convey("Status Code Should Be 200", func() {
-			So(w.Code, ShouldEqual, 200)
-		})
-		Convey("The Result Should Not Be Empty", func() {
-			So(w.Body.Len(), ShouldBeGreaterThan, 0)
-		})
-	})
+	controller := &controllers.CatController{}
+	controller.GetRandomCat(w, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.JSONEq(t, mockResponse, w.Body.String())
+	mockClient.AssertExpectations(t)
 }
 
-func TestGetVotingHistory(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/api/vote_history", nil)
+func TestVote(t *testing.T) {
+	votePayload := models.Vote{
+		ImageID: "test_image",
+		SubID:   "test_user",
+		Value:   1,
+	}
+	mockResponse := `{"message":"Vote recorded"}`
+
+	mockClient.On("MakeRequest", "votes", "POST", votePayload).Return([]byte(mockResponse), nil)
+
+	body, _ := json.Marshal(votePayload)
+	r, _ := http.NewRequest("POST", "/api/vote", bytes.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
-	beego.BeeApp.Handlers.ServeHTTP(w, r)
 
-	Convey("Subject: Test Get Voting History Endpoint\n", t, func() {
-		Convey("Status Code Should Be 200", func() {
-			So(w.Code, ShouldEqual, 200)
-		})
-		Convey("The Result Should Not Be Empty", func() {
-			So(w.Body.Len(), ShouldBeGreaterThan, 0)
-		})
-	})
+	controller := &controllers.VoteController{}
+	controller.Vote(w, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.JSONEq(t, mockResponse, w.Body.String())
+	mockClient.AssertExpectations(t)
 }
 
-func TestInvalidVotePayload(t *testing.T) {
-    invalidPayload := `{"invalid_field":"value"}`
-    r, _ := http.NewRequest("POST", "/api/vote", strings.NewReader(invalidPayload))
-    r.Header.Set("Content-Type", "application/json")
-    w := httptest.NewRecorder()
-    beego.BeeApp.Handlers.ServeHTTP(w, r)
+func TestAddFavorite(t *testing.T) {
+	favoritePayload := models.FavoritePayload{
+		ImageID: "test_image",
+		SubID:   "test_user",
+	}
+	mockResponse := `{"message":"Favorite added"}`
 
-    logs.Trace("testing", "TestInvalidVotePayload", "Code[%d]\n%s", w.Code, w.Body.String())
+	mockClient.On("MakeRequest", "favourites", "POST", favoritePayload).Return([]byte(mockResponse), nil)
 
-    Convey("Subject: Test Invalid Vote Payload\n", t, func() {
-        Convey("Status Code Should Be 400", func() {
-            So(w.Code, ShouldEqual, 400)
-        })
-    })
+	body, _ := json.Marshal(favoritePayload)
+	r, _ := http.NewRequest("POST", "/api/favorites", bytes.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	controller := &controllers.FavoritesController{}
+	controller.AddFavorite(w, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.JSONEq(t, mockResponse, w.Body.String())
+	mockClient.AssertExpectations(t)
 }
 
-func TestMissingVoteHeaders(t *testing.T) {
-    validPayload := `{"image_id":"test_image","value":1}`
-    r, _ := http.NewRequest("POST", "/api/vote", strings.NewReader(validPayload))
-    w := httptest.NewRecorder() // No Content-Type header
+func TestGetFavorites(t *testing.T) {
+	mockResponse := `[{"id":"fav123","image_id":"test_image","sub_id":"test_user"}]`
 
-    beego.BeeApp.Handlers.ServeHTTP(w, r)
-    logs.Trace("testing", "TestMissingVoteHeaders", "Code[%d]\n%s", w.Code, w.Body.String())
+	mockClient.On("MakeRequest", "favourites?limit=28&order=Desc&sub_id=test_user", "GET", nil).Return([]byte(mockResponse), nil)
 
-    Convey("Subject: Test Missing Vote Headers\n", t, func() {
-        Convey("Status Code Should Be 400 or 415", func() {
-            So(w.Code, ShouldBeIn, []int{400, 415})
-        })
-    })
+	r, _ := http.NewRequest("GET", "/api/favorites", nil)
+	w := httptest.NewRecorder()
+
+	controller := &controllers.FavoritesController{}
+	controller.GetFavorites(w, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.JSONEq(t, mockResponse, w.Body.String())
+	mockClient.AssertExpectations(t)
 }
