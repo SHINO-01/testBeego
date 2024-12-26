@@ -1,15 +1,22 @@
-//api_client.go
+// controllers/api_client.go
 
 package controllers
 
 import (
     "fmt"
+
     "github.com/beego/beego/v2/client/httplib"
     "github.com/beego/beego/v2/core/logs"
     "github.com/beego/beego/v2/server/web"
 )
 
-// getConfig fetches a config value or returns fallback if not found
+// CatAPIClient is our concrete type implementing the APIClient interface.
+type CatAPIClient struct{}
+
+// Verify CatAPIClient implements APIClient at compile time.
+var _ APIClient = (*CatAPIClient)(nil)
+
+// getConfig fetches a config value or returns a fallback if not found.
 func getConfig(key, fallback string) string {
     value, err := web.AppConfig.String(key)
     if err != nil || value == "" {
@@ -18,8 +25,8 @@ func getConfig(key, fallback string) string {
     return value
 }
 
-// makeAPIRequest spawns a goroutine to call The Cat API, returning a channel
-func makeAPIRequest(endpoint, method string, payload interface{}) chan []byte {
+// MakeAPIRequest spawns a goroutine to call The Cat API, returning a channel.
+func (c *CatAPIClient) MakeAPIRequest(endpoint, method string, payload interface{}) chan []byte {
     resultChan := make(chan []byte)
 
     go func() {

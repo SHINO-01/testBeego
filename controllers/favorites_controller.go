@@ -1,4 +1,4 @@
-//favorites_controller.go
+// controllers/favorites_controller.go
 
 package controllers
 
@@ -14,14 +14,19 @@ import (
 
 type FavoritesController struct {
     web.Controller
+    APIClient APIClient // <--- Our new field
 }
 
 // Fetch the user's favorites (latest 28)
 func (f *FavoritesController) GetFavorites() {
+    if f.APIClient == nil {
+        f.APIClient = &CatAPIClient{}
+    }
+
     subID := getConfig("sub_id", "default-user-id")
     apiEndpoint := fmt.Sprintf("favourites?limit=28&order=Desc&sub_id=%s", subID)
 
-    resultChan := makeAPIRequest(apiEndpoint, "GET", nil)
+    resultChan := f.APIClient.MakeAPIRequest(apiEndpoint, "GET", nil)
 
     select {
     case result := <-resultChan:
@@ -35,6 +40,10 @@ func (f *FavoritesController) GetFavorites() {
 
 // Add a cat image to favorites
 func (f *FavoritesController) AddFavorite() {
+    if f.APIClient == nil {
+        f.APIClient = &CatAPIClient{}
+    }
+
     bodyBytes := f.Ctx.Input.CopyBody(1024 * 1024)
     if len(bodyBytes) == 0 {
         logs.Warn("Request body is empty after CopyBody")
@@ -62,7 +71,7 @@ func (f *FavoritesController) AddFavorite() {
         fav.SubID = getConfig("sub_id", "default-user-id")
     }
 
-    resultChan := makeAPIRequest("favourites", "POST", fav)
+    resultChan := f.APIClient.MakeAPIRequest("favourites", "POST", fav)
 
     select {
     case result := <-resultChan:
@@ -76,10 +85,14 @@ func (f *FavoritesController) AddFavorite() {
 
 // Remove a cat image from favorites
 func (f *FavoritesController) RemoveFavorite() {
+    if f.APIClient == nil {
+        f.APIClient = &CatAPIClient{}
+    }
+
     favoriteID := f.Ctx.Input.Param(":id")
     apiEndpoint := fmt.Sprintf("favourites/%s", favoriteID)
 
-    resultChan := makeAPIRequest(apiEndpoint, "DELETE", nil)
+    resultChan := f.APIClient.MakeAPIRequest(apiEndpoint, "DELETE", nil)
 
     select {
     case result := <-resultChan:

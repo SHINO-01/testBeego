@@ -1,4 +1,4 @@
-//cat_controller.go
+// controllers/cat_controller.go
 
 package controllers
 
@@ -8,11 +8,11 @@ import (
 
     "github.com/beego/beego/v2/core/logs"
     "github.com/beego/beego/v2/server/web"
-    // "myapp/models" // If needed for certain logic
 )
 
 type CatController struct {
     web.Controller
+    APIClient APIClient // <--- Our new field
 }
 
 // Renders the index page
@@ -22,7 +22,12 @@ func (c *CatController) Get() {
 
 // Fetches a random cat image
 func (c *CatController) GetRandomCat() {
-    resultChan := makeAPIRequest("images/search?limit=1", "GET", nil)
+    // If no APIClient is injected, use the real implementation.
+    if c.APIClient == nil {
+        c.APIClient = &CatAPIClient{}
+    }
+
+    resultChan := c.APIClient.MakeAPIRequest("images/search?limit=1", "GET", nil)
 
     select {
     case result := <-resultChan:
@@ -36,7 +41,11 @@ func (c *CatController) GetRandomCat() {
 
 // Fetches all cat breeds
 func (c *CatController) GetBreeds() {
-    resultChan := makeAPIRequest("breeds", "GET", nil)
+    if c.APIClient == nil {
+        c.APIClient = &CatAPIClient{}
+    }
+
+    resultChan := c.APIClient.MakeAPIRequest("breeds", "GET", nil)
 
     select {
     case result := <-resultChan:
@@ -61,8 +70,12 @@ func (c *CatController) GetBreedImages() {
         return
     }
 
+    if c.APIClient == nil {
+        c.APIClient = &CatAPIClient{}
+    }
+
     apiEndpoint := fmt.Sprintf("images/search?breed_ids=%s&limit=%d", breedID, limit)
-    resultChan := makeAPIRequest(apiEndpoint, "GET", nil)
+    resultChan := c.APIClient.MakeAPIRequest(apiEndpoint, "GET", nil)
 
     select {
     case result := <-resultChan:

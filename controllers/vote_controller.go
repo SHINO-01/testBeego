@@ -1,4 +1,4 @@
-//vote_controller.go
+// controllers/vote_controller.go
 
 package controllers
 
@@ -14,11 +14,16 @@ import (
 
 type VoteController struct {
     web.Controller
+    APIClient APIClient // <--- Our new field
 }
 
 // Submit a vote for a cat image
 func (v *VoteController) Vote() {
     logs.Info("Vote endpoint hit")
+
+    if v.APIClient == nil {
+        v.APIClient = &CatAPIClient{}
+    }
 
     bodyBytes := v.Ctx.Input.CopyBody(1024 * 1024)
     if len(bodyBytes) == 0 {
@@ -53,7 +58,7 @@ func (v *VoteController) Vote() {
     logs.Info("Final Vote Payload: %+v", vote)
 
     // Make the API request
-    resultChan := makeAPIRequest("votes", "POST", vote)
+    resultChan := v.APIClient.MakeAPIRequest("votes", "POST", vote)
 
     select {
     case result := <-resultChan:
@@ -69,10 +74,14 @@ func (v *VoteController) Vote() {
 func (v *VoteController) GetVoteHistory() {
     logs.Info("GetVoteHistory endpoint hit")
 
+    if v.APIClient == nil {
+        v.APIClient = &CatAPIClient{}
+    }
+
     subID := getConfig("sub_id", "default-user-id")
     apiEndpoint := fmt.Sprintf("votes?sub_id=%s&limit=28&order=Desc", subID)
 
-    resultChan := makeAPIRequest(apiEndpoint, "GET", nil)
+    resultChan := v.APIClient.MakeAPIRequest(apiEndpoint, "GET", nil)
 
     select {
     case result := <-resultChan:
